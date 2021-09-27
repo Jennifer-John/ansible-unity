@@ -12,17 +12,17 @@ ANSIBLE_METADATA = {'metadata_version': '1.1',
 DOCUMENTATION = r'''
 ---
 module: dellemc_unity_snapshot
-short_description: Manage snapshot on the Unity Storage System
+short_description: Manage snapshots on the Unity storage system.
 description:
-- Managing Snapshot on the Unity Storage System includes create snapshot,
+- Managing snapshots on the Unity storage system includes create snapshot,
   delete snapshot, update snapshot, get snapshot, map host and unmap host.
-version_added: "2.7"
+version_added: "1.1.0"
 
 extends_documentation_fragment:
-  - dellemc_unity.dellemc_unity
+  - dellemc.unity.dellemc_unity.unity
 
 author:
-- P Srinivas Rao (@srinivas-rao5) srinivas_rao5@dell.com
+- P Srinivas Rao (@srinivas-rao5) <ansible.team@dell.com>
 options:
   snapshot_name:
     description:
@@ -34,13 +34,13 @@ options:
   vol_name:
     description:
     - The name of the volume for which snapshot is created.
-    - For creation of snapshot either vol_name or cg_name is required.
+    - For creation of a snapshot either vol_name or cg_name is required.
     - Not required for other operations.
     type: str
   cg_name:
     description:
     - The name of the Consistency Group for which snapshot is created.
-    - For creation of snapshot either vol_name or cg_name is required.
+    - For creation of a snapshot either vol_name or cg_name is required.
     - Not required for other operations.
     type: str
   snapshot_id:
@@ -89,7 +89,7 @@ options:
     description:
     - The name of the host.
     - Either host_name or host_id is required to map or unmap a snapshot from
-      a host
+      a host.
     - Snapshot can be attached to multiple hosts.
     type: str
   host_id:
@@ -195,52 +195,46 @@ snapshot_details:
     type: complex
     contains:
         is_auto_delete:
-            description:
-                - Additional information mentioned for snapshot.
+            description: Additional information mentioned for snapshot.
             type: str
         expiration_time:
-            description:
-                - Date and time after which the snapshot will expire.
+            description: Date and time after which the snapshot
+                         will expire.
             type: str
         hosts_list:
-            description:
-                - Contains the name and id of the associated hosts.
+            description: Contains the name and id of the associated
+                         hosts.
             type: dict
         id:
-            description:
-                -  Unique identifier of the snapshot instance.
+            description: Unique identifier of the snapshot instance.
             type: str
         name:
-            description:
-                - The name of the snapshot.
+            description: The name of the snapshot.
             type: str
         storage_resource_name:
-            description:
-                - Name of the storage resource for which the snapshot exists.
+            description: Name of the storage resource for which the
+                         snapshot exists.
             type: str
         storage_resource_id:
-            description:
-                - Id of the storage resource for which the snapshot exists.
+            description: Id of the storage resource for which the snapshot
+                         exists.
             type: str
 
 '''
 
 import logging
 from ansible.module_utils.basic import AnsibleModule
-from ansible.module_utils.storage.dell import \
-    dellemc_ansible_unity_utils as utils
-from storops.unity.resource import snap
-from storops.unity.enums import FilesystemSnapAccessTypeEnum, SnapStateEnum,\
-    SnapAccessLevelEnum
+from ansible_collections.dellemc.unity.plugins.module_utils.storage.dell \
+    import dellemc_ansible_unity_utils as utils
 from datetime import datetime
-from storops.connection.exceptions import HttpError
-from storops.exception import UnityResourceNotFoundError
 
 LOG = utils.get_logger('dellemc_unity_snapshot',
                        log_devel=logging.INFO)
 
 HAS_UNITY_SDK = utils.get_unity_sdk()
 UNITY_SDK_VERSION_CHECK = utils.storops_version_check()
+
+application_type = "Ansible/1.2.0"
 
 
 class UnitySnapshot(object):
@@ -281,8 +275,8 @@ class UnitySnapshot(object):
             self.module.fail_json(msg=err_msg)
 
         self.unity_conn = utils.get_unity_unisphere_connection(
-            self.module.params)
-        self.snap_obj = snap.UnitySnap(self.unity_conn)
+            self.module.params, application_type)
+        self.snap_obj = utils.snap.UnitySnap(self.unity_conn)
         LOG.info('Connection established with the Unity Array')
 
     def validate_expiry_time(self, expiry_time):
@@ -386,7 +380,7 @@ class UnitySnapshot(object):
         try:
             return self.unity_conn.get_snap(name=name, _id=id)
 
-        except HttpError as e:
+        except utils.HttpError as e:
             if e.http_status == 401:
                 cred_err = "Incorrect username or password , {0}".format(
                     e.message)
@@ -396,7 +390,7 @@ class UnitySnapshot(object):
                 LOG.error(err_msg)
                 self.module.fail_json(msg=err_msg)
 
-        except UnityResourceNotFoundError as e:
+        except utils.UnityResourceNotFoundError as e:
             err_msg = msg % (snapshot, str(e))
             LOG.error(err_msg)
             return None

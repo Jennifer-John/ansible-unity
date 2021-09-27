@@ -15,20 +15,20 @@ DOCUMENTATION = r'''
 ---
 module: dellemc_unity_storagepool
 
-version_added: '2.7'
+version_added: '1.1.0'
 
 short_description: Manage storage pool on Unity
 
 description:
-- Managing storage pool on Unity storage system
+- Managing storage pool on Unity storage system contains the following operations
 - Get details of storage pool
 - Modify storage pool
 
 extends_documentation_fragment:
-  - dellemc_unity.dellemc_unity
+  - dellemc.unity.dellemc_unity.unity
 
 author:
-- Ambuj Dubey (@AmbujDube) <ambuj.dubey@dell.com>
+- Ambuj Dubey (@AmbujDube) <ansible.team@dell.com>
 
 options:
   pool_name:
@@ -145,58 +145,47 @@ RETURN = r'''
             description: Pool name, unique in the storage system.
             type: str
         is_fast_cache_enabled:
-            description:
-            - Indicates whether the fast cache is enabled for the storage
-              pool.
-            - true - FAST Cache is enabled for the pool.
-            - false - FAST Cache is disabled for the pool.
+            description: Indicates whether the fast cache is enabled for the storage
+                         pool.
+                         true - FAST Cache is enabled for the pool.
+                         false - FAST Cache is disabled for the pool.
             type: bool
         is_fast_vp_enabled:
-            description:
-            - Indicates whether to enable scheduled data relocations for the
-              storage pool.
-            - true - Enabled scheduled data relocations for the pool.
-            - false - Disabled scheduled data relocations for the pool.
+            description: Indicates whether to enable scheduled data relocations
+                         for the storage pool.
+                         true - Enabled scheduled data relocations for the pool.
+                         false - Disabled scheduled data relocations for the pool.
             type: bool
         size_free_with_unit:
-            description:
-            - Indicates size_free with its appropriate unit in human readable
-              form.
+            description: Indicates size_free with its appropriate unit
+                         in human readable form.
             type: str
         size_subscribed_with_unit:
-            description:
-            - Indicates size_subscribed with its appropriate unit in human
-              readable form.
+            description: Indicates size_subscribed with its appropriate unit in
+                         human readable form.
             type: str
         size_total_with_unit:
-            description:
-            - Indicates size_total with its appropriate unit in human readable
-              form.
+            description: Indicates size_total with its appropriate unit in human
+                         readable form.
             type: str
         size_used_with_unit:
-            description:
-            - Indicates size_used with its appropriate unit in human readable
-              form.
+            description: Indicates size_used with its appropriate unit in human
+                         readable form.
             type: str
         snap_size_subscribed_with_unit:
-            description:
-            - Indicates snap_size_subscribed with its appropriate unit in
-              human readable form.
+            description: Indicates snap_size_subscribed with its
+                         appropriate unit in human readable form.
             type: str
         snap_size_used_with_unit:
-            description:
-            - Indicates snap_size_used with its appropriate unit in human
-              readable form.
+            description: Indicates snap_size_used with its
+                         appropriate unit in human readable form.
             type: str
  '''
 
-from storops.unity.resource.pool import UnityPool
 from ansible.module_utils.basic import AnsibleModule
-from ansible.module_utils.storage.dell import \
-    dellemc_ansible_unity_utils as utils
-import re
+from ansible_collections.dellemc.unity.plugins.module_utils.storage.dell \
+    import dellemc_ansible_unity_utils as utils
 import logging
-import math
 
 LOG = utils.get_logger('dellemc_unity_storagepool', log_devel=logging.INFO)
 HAS_UNITY_SDK = utils.get_unity_sdk()
@@ -204,6 +193,8 @@ HAS_UNITY_SDK = utils.get_unity_sdk()
 UNITY_SDK_VERSION = utils.storops_version_check()
 UNITY_SDK_VERSION_CHECK = UNITY_SDK_VERSION['supported_version']
 UNITY_SDK_VERSION_ERROR = UNITY_SDK_VERSION['unsupported_version_message']
+
+application_type = "Ansible/1.2.0"
 
 
 class UnityStoragePool(object):
@@ -234,7 +225,7 @@ class UnityStoragePool(object):
             self.module.fail_json(msg=UNITY_SDK_VERSION_ERROR)
 
         self.conn = utils.\
-            get_unity_unisphere_connection(self.module.params)
+            get_unity_unisphere_connection(self.module.params, application_type)
 
     def get_details(self, pool_id, pool_name):
         """ Get storage pool details"""
@@ -264,7 +255,7 @@ class UnityStoragePool(object):
             details['snap_size_used_with_unit'] = utils.\
                 convert_size_with_unit(int(details['snap_size_used']))
 
-            pool_instance = UnityPool.get(self.conn._cli, details['id'])
+            pool_instance = utils.UnityPool.get(self.conn._cli, details['id'])
             pool_tier_list = []
             pool_tier_list.append((pool_instance.tiers)._get_properties())
             pool_tier_dict = {}
@@ -325,7 +316,7 @@ class UnityStoragePool(object):
     def pool_modify(self, id, new_pool_name,
                     pool_description, fast_cache, fast_vp):
         """ Modify attributes of storage pool """
-        pool_obj = UnityPool.get(self.conn._cli, id)
+        pool_obj = utils.UnityPool.get(self.conn._cli, id)
         try:
             pool_obj.modify(name=new_pool_name, description=pool_description,
                             is_fast_cache_enabled=fast_cache,

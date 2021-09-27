@@ -13,24 +13,24 @@ ANSIBLE_METADATA = {'metadata_version': '1.1',
 
 DOCUMENTATION = r"""
 module: dellemc_unity_snapshotschedule
-version_added: '2.7'
-short_description: Manage snapshot schedule on Unity Storage System
+version_added: '1.1.0'
+short_description: Manage snapshot schedules on Unity storage system
 description:
-- Managing snapshot schedule on Unity Storage System includes
+- Managing snapshot schedules on Unity storage system includes
   creating new snapshot schedule, getting details of snapshot schedule,
-  modifying attributes of snapshot schedule and deleting snapshot schedule.
+  modifying attributes of snapshot schedule, and deleting snapshot schedule.
 
 extends_documentation_fragment:
-  - dellemc_unity.dellemc_unity
+  - dellemc.unity.dellemc_unity.unity
 
 author:
-- Akash Shendge (@shenda1) <akash.shendge@dell.com>
+- Akash Shendge (@shenda1) <ansible.team@dell.com>
 
 options:
   name:
     description:
     - The name of the snapshot schedule.
-    - Name is mandatory for create operation.
+    - Name is mandatory for a create operation.
     - Specify either name or id (but not both) for any operation.
     type: str
   id:
@@ -55,6 +55,7 @@ options:
     - Hours of the day when the snapshot will be taken.
     - Applicable only when rule type is 'every_day'.
     type: list
+    elements: int
   day_interval:
     description:
     - Number of days between snapshots.
@@ -65,6 +66,7 @@ options:
     - Days of the week for which the snapshot schedule rule applies.
     - Applicable only  when rule type is 'every_week'.
     type: list
+    elements: str
     choices: ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY',
      'FRIDAY', 'SATURDAY']
   day_of_month:
@@ -85,7 +87,7 @@ options:
     description:
     - Minute offset from the hour when the snapshot will be taken.
     - Applicable for all rule types.
-    - For create operation, if 'minute' parameter is not specified, value will
+    - For a create operation, if 'minute' parameter is not specified, value will
      be taken as 0.
     - Value should be [0, 59].
     type: int
@@ -259,12 +261,10 @@ snapshot_schedule_details:
     type: complex
     contains:
         id:
-            description:
-                - The system ID given to the snapshot schedule.
+            description: The system ID given to the snapshot schedule.
             type: str
         name:
-            description:
-                - The name of the snapshot schedule.
+            description: The name of the snapshot schedule.
             type: str
         luns:
             description: Details of volumes for which snapshot schedule
@@ -281,29 +281,26 @@ snapshot_schedule_details:
                             type: complex
                             contains:
                                 id:
-                                    description:
-                                        - The system ID given to volume.
+                                    description: The system ID given to volume.
                                     type: str
         rules:
             description: Details of rules that apply to snapshot schedule.
             type: complex
             contains:
                 id:
-                    description:
-                        - The system ID of the rule.
+                    description: The system ID of the rule.
                     type: str
                 interval:
-                    description:
-                        - Number of days or hours between snaps, depending on
-                          the rule type.
+                    description: Number of days or hours between snaps,
+                                 depending on the rule type.
                     type: int
                 hours:
-                    description:
-                        - Hourly frequency for the snapshot schedule rule.
+                    description: Hourly frequency for the snapshot
+                                 schedule rule.
                     type: list
                 minute:
-                    description:
-                        - Minute frequency for the snapshot schedule rule.
+                    description: Minute frequency for the snapshot
+                                 schedule rule.
                     type: int
                 days_of_week:
                     description: Days of the week for which the snapshot
@@ -311,34 +308,28 @@ snapshot_schedule_details:
                     type: complex
                     contains:
                         DayOfWeekEnumList:
-                            description:
-                                - Enumeration of days of the week.
+                            description: Enumeration of days of the week.
                             type: list
                 days_of_month:
-                    description:
-                        - Days of the month for which the snapshot schedule
-                          rule applies.
+                    description: Days of the month for which the snapshot
+                                 schedule rule applies.
                     type: list
                 retention_time:
-                    description:
-                        - Period of time in seconds for which to keep the
-                          snapshot.
+                    description: Period of time in seconds for which to keep
+                                 the snapshot.
                     type: int
                 retention_time_in_hours:
-                    description:
-                        - Period of time in hours for which to keep the
-                          snapshot.
+                    description: Period of time in hours for which to keep the
+                                 snapshot.
                     type: int
                 rule_type:
-                    description:
-                        - Type of the rule applied to snapshot schedule.
+                    description: Type of the rule applied to snapshot schedule.
                     type: str
                 is_auto_delete:
-                    description:
-                        - Indicates whether the system can automatically
-                          delete the snapshot based on pool automatic-deletion
-                          thresholds.
-                    type: Boolean
+                    description: Indicates whether the system can automatically
+                                 delete the snapshot based on pool automatic-deletion
+                                 thresholds.
+                    type: bool
         storage_resources:
             description: Details of storage resources for which snapshot
              schedule applied.
@@ -354,20 +345,15 @@ snapshot_schedule_details:
                             type: complex
                             contains:
                                 id:
-                                    description:
-                                        - The system ID given to storage
-                                         resource.
+                                    description: The system ID given to storage
+                                                 resource.
                                     type: str
 """
 
 import logging
-from storops.unity.enums import ScheduleTypeEnum, DayOfWeekEnum
-from storops.exception import UnityResourceNotFoundError
-from storops.connection.exceptions import HttpError
-from storops.unity.resource import snap_schedule
 from ansible.module_utils.basic import AnsibleModule
-from ansible.module_utils.storage.dell import \
-    dellemc_ansible_unity_utils as utils
+from ansible_collections.dellemc.unity.plugins.module_utils.storage.dell \
+    import dellemc_ansible_unity_utils as utils
 
 LOG = utils.get_logger('dellemc_unity_snapshotschedule',
                        log_devel=logging.INFO)
@@ -375,6 +361,8 @@ LOG = utils.get_logger('dellemc_unity_snapshotschedule',
 HAS_UNITY_SDK = utils.get_unity_sdk()
 
 UNITY_SDK_VERSION_CHECK = utils.storops_version_check()
+
+application_type = "Ansible/1.2.0"
 
 
 class UnitySnapshotSchedule(object):
@@ -413,7 +401,7 @@ class UnitySnapshotSchedule(object):
             self.module.fail_json(msg=err_msg)
 
         self.unity_conn = utils.get_unity_unisphere_connection(
-            self.module.params)
+            self.module.params, application_type)
 
     def schedule_modify_required(self, schedule_details):
         """Check if the desired snapshot schedule state is different from
@@ -439,7 +427,7 @@ class UnitySnapshotSchedule(object):
         desired_rule_type = get_schedule_value(self.module.params['type'])
         existing_rule_string = schedule_details['rules'][0][
             'type'].split(".")[1]
-        existing_rule_type = ScheduleTypeEnum[
+        existing_rule_type = utils.ScheduleTypeEnum[
             existing_rule_string]._get_properties()['value']
         modified = False
 
@@ -520,8 +508,8 @@ class UnitySnapshotSchedule(object):
 
         days_of_week_enum = []
         for day in days_of_week:
-            if day in DayOfWeekEnum.__members__:
-                days_of_week_enum.append(DayOfWeekEnum[day])
+            if day in utils.DayOfWeekEnum.__members__:
+                days_of_week_enum.append(utils.DayOfWeekEnum[day])
             else:
                 errormsg = "Invalid choice {0} for days of week".format(day)
                 LOG.error(errormsg)
@@ -559,26 +547,27 @@ class UnitySnapshotSchedule(object):
             if type == "every_n_hours":
                 if not interval:
                     interval = schedule_details['rules'][0]['interval']
-                rule_dict = snap_schedule.UnitySnapScheduleRule.every_n_hours(
-                    hour_interval=interval, minute=minute,
-                    retention_time=duration_in_sec, is_auto_delete=auto_delete
-                )
+                rule_dict = utils.snap_schedule.UnitySnapScheduleRule.\
+                    every_n_hours(hour_interval=interval, minute=minute,
+                                  retention_time=duration_in_sec,
+                                  is_auto_delete=auto_delete)
             elif type == "every_day":
                 if not hours_of_day:
                     hours_of_day = schedule_details['rules'][0]['hours']
 
-                rule_dict = snap_schedule.UnitySnapScheduleRule.every_day(
-                    hours=hours_of_day, minute=minute,
-                    retention_time=duration_in_sec,
-                    is_auto_delete=auto_delete)
+                rule_dict = utils.snap_schedule.UnitySnapScheduleRule.\
+                    every_day(hours=hours_of_day, minute=minute,
+                              retention_time=duration_in_sec,
+                              is_auto_delete=auto_delete)
             elif type == "every_n_days":
                 if not day_interval:
                     day_interval = schedule_details['rules'][0]['interval']
 
-                rule_dict = snap_schedule.UnitySnapScheduleRule.every_n_days(
-                    day_interval=day_interval, hour=hour, minute=minute,
-                    retention_time=duration_in_sec, is_auto_delete=auto_delete
-                )
+                rule_dict = utils.snap_schedule.UnitySnapScheduleRule.\
+                    every_n_days(day_interval=day_interval, hour=hour,
+                                 minute=minute,
+                                 retention_time=duration_in_sec,
+                                 is_auto_delete=auto_delete)
             elif type == "every_week":
                 if days_of_week:
                     days_of_week_enum = self.get_daysOfWeek_enum(days_of_week)
@@ -592,7 +581,7 @@ class UnitySnapshotSchedule(object):
                         existing_days.append(temp[1])
                     days_of_week_enum = self.get_daysOfWeek_enum(days_of_week)
 
-                rule_dict = snap_schedule.UnitySnapScheduleRule.\
+                rule_dict = utils.snap_schedule.UnitySnapScheduleRule.\
                     every_week(days_of_week=days_of_week_enum, hour=hour,
                                minute=minute, retention_time=duration_in_sec,
                                is_auto_delete=auto_delete)
@@ -603,10 +592,10 @@ class UnitySnapshotSchedule(object):
                     day_of_month_list = schedule_details['rules'][0][
                         'days_of_month']
 
-                rule_dict = snap_schedule.UnitySnapScheduleRule.every_month(
-                    days_of_month=day_of_month_list, hour=hour, minute=minute,
-                    retention_time=duration_in_sec, is_auto_delete=auto_delete
-                )
+                rule_dict = utils.snap_schedule.UnitySnapScheduleRule.\
+                    every_month(days_of_month=day_of_month_list, hour=hour,
+                                minute=minute, retention_time=duration_in_sec,
+                                is_auto_delete=auto_delete)
 
             return rule_dict
 
@@ -624,7 +613,7 @@ class UnitySnapshotSchedule(object):
         """
 
         try:
-            snap_schedule.UnitySnapSchedule.create(
+            utils.snap_schedule.UnitySnapSchedule.create(
                 cli=self.unity_conn._cli, name=name, rules=[rule_dict])
             return True
 
@@ -657,7 +646,7 @@ class UnitySnapshotSchedule(object):
         """
 
         try:
-            obj_schedule = snap_schedule.UnitySnapSchedule.get(
+            obj_schedule = utils.snap_schedule.UnitySnapSchedule.get(
                 self.unity_conn._cli, id)
             return obj_schedule
 
@@ -741,7 +730,7 @@ class UnitySnapshotSchedule(object):
                    " error {1}"
         try:
             if not id:
-                details = snap_schedule.UnitySnapScheduleList.get(
+                details = utils.snap_schedule.UnitySnapScheduleList.get(
                     self.unity_conn._cli, name=name)
 
                 if details:
@@ -764,7 +753,7 @@ class UnitySnapshotSchedule(object):
                 LOG.info("Failed to get the snapshot schedule %s", id_or_name)
                 return None
 
-        except HttpError as e:
+        except utils.HttpError as e:
             if e.http_status == 401:
                 auth_err = "Incorrect username or password, {0}".format(
                     e.message)
@@ -776,7 +765,7 @@ class UnitySnapshotSchedule(object):
                 LOG.error(msg)
                 self.module.fail_json(msg=msg)
 
-        except UnityResourceNotFoundError as e:
+        except utils.UnityResourceNotFoundError as e:
             msg = errormsg.format(id_or_name, str(e))
             LOG.error(msg)
             return None
