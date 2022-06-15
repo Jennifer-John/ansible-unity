@@ -68,6 +68,7 @@ jobs:
       - name: Setup Unit test Pre-requisites
         run: |
           ansible-galaxy collection install .cache/collection-tarballs/*.tar.gz
+          pip install -r /home/runner/.ansible/collections/ansible_collections/dellemc/unity/tests/requirements.txt
       - name: Run Unit tests using ansible-test
         run: ansible-test units -v --color --python ${{ matrix.python-version }} --coverage
         working-directory: /home/runner/.ansible/collections/ansible_collections/dellemc/unity
