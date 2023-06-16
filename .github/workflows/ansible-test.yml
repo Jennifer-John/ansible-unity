@@ -140,18 +140,18 @@ jobs:
   
       - name: Install ansible (${{ matrix.ansible-version }}) version
         run: pip install https://github.com/ansible/ansible/archive/${{ matrix.ansible-version }}.tar.gz --disable-pip-version-check
-  
+
       - name: Install ansible lint
         run: pip install ansible-lint pytest --disable-pip-version-check
-  
+
       - name: Install ansible posix
         run: ansible-galaxy collection install ansible.posix
 
       - name: Download migrated collection artifacts
         uses: actions/download-artifact@v1
         with:
-           name: collection
-           path: .cache/collection-tarballs
+          name: collection
+          path: .cache/collection-tarballs
 
       - name: Install collection build
         run: ansible-galaxy collection install .cache/collection-tarballs/*.tar.gz
