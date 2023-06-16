@@ -128,11 +128,8 @@ jobs:
           ansible-version: [stable-2.13, stable-2.14, stable-2.15]
 
       steps:
-        # Important: This sets up your GITHUB_WORKSPACE environment variable
         - name: Checkout the source code
-          uses: actions/checkout@v3
-          with:
-            fetch-depth: 0 # needed for progressive mode to work
+          uses: actions/checkout@v2
         
         - name: Set up Python ${{ matrix.python-version }}
           uses: actions/setup-python@v1
@@ -141,15 +138,6 @@ jobs:
 
         - name: Install ansible lint
           run: pip install ansible-lint --disable-pip-version-check
-
-        - name: Download migrated collection artifacts
-          uses: actions/download-artifact@v1
-          with:
-            name: collection
-            path: .cache/collection-tarballs
-
-        - name: Install collection build
-          run: ansible-galaxy collection install .cache/collection-tarballs/*.tar.gz
 
         - name: Run Ansible lint
           run: ansible-lint --show-relpath
