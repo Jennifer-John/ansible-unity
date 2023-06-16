@@ -148,6 +148,9 @@ jobs:
           with:
             name: collection
             path: .cache/collection-tarballs
+            
+        - name: Install ansible lint
+          run: pip install ansible-lint --disable-pip-version-check
 
         - name: Install collection build
           run: ansible-galaxy collection install .cache/collection-tarballs/*.tar.gz
