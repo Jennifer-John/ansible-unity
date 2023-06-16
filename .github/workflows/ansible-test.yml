@@ -124,7 +124,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: [3.9, '3.10']
+        python-version: ["3.9"]
         ansible-version: [stable-2.13, stable-2.14, stable-2.15]
 
     steps:
