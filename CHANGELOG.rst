@@ -6,7 +6,7 @@ Dellemc.Unity Change Log
 
 
 v1.7.0
-======
+=======
 
 Minor Changes
 -------------
