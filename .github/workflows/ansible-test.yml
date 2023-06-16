@@ -153,4 +153,4 @@ jobs:
 
         - name: Run Ansible lint
           run: ansible-lint --show-relpath
-          working-directory: /home/runner/.ansible/collections/ansible_collections/dellemc/unity
+          working-directory: /home/runner/work/ansible-unity/ansible-unity
