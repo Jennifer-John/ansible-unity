@@ -121,15 +121,14 @@ jobs:
       name: Ansible lint
       runs-on: ubuntu-latest
       needs: [build]
-      
       strategy:
         fail-fast: false
         matrix:
-          python-version: ["3.9", "3.10", "3.11"]
-          ansible-version: [stable-2.13, stable-2.14, stable-2.15]
+          python-version: [3.9, '3.10']
+          ansible-version: [stable-2.12, stable-2.13, stable-2.14, stable-2.15]
 
       steps:
-         # Important: This sets up your GITHUB_WORKSPACE environment variable
+        # Important: This sets up your GITHUB_WORKSPACE environment variable
         - name: Checkout the source code
           uses: actions/checkout@v3
           with:
@@ -139,18 +138,21 @@ jobs:
           uses: actions/setup-python@v1
           with:
             python-version: ${{ matrix.python-version }}
-      
+
         - name: Install ansible (${{ matrix.ansible-version }}) version
           run: pip install https://github.com/ansible/ansible/archive/${{ matrix.ansible-version }}.tar.gz --disable-pip-version-check
+
+        - name: Install ansible lint
+          run: pip install ansible-lint==6.16.2 pytest --disable-pip-version-check
+
+        - name: Install ansible posix
+          run: ansible-galaxy collection install ansible.posix
 
         - name: Download migrated collection artifacts
           uses: actions/download-artifact@v1
           with:
             name: collection
             path: .cache/collection-tarballs
-            
-        - name: Install ansible lint
-          run: pip install ansible-lint pytest --disable-pip-version-check
 
         - name: Install collection build
           run: ansible-galaxy collection install .cache/collection-tarballs/*.tar.gz
