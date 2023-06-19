@@ -148,6 +148,15 @@ jobs:
       - name: Install ansible lint
         run: pip install ansible-lint pytest --disable-pip-version-check
 
+      - name: Download migrated collection artifacts
+        uses: actions/download-artifact@v1
+        with:
+          name: collection
+          path: .cache/collection-tarballs
+
+      - name: Install collection build
+        run: ansible-galaxy collection install .cache/collection-tarballs/*.tar.gz
+
       - name: Run Ansible lint
         run: ansible-lint --show-relpath
         working-directory: /home/runner/work/ansible-unity/ansible-unity
