@@ -121,6 +121,7 @@ jobs:
       - name: Run sanity tests
         run: ansible-test sanity --docker -v --color
         working-directory: /home/runner/.ansible/collections/ansible_collections/dellemc/unity
+  
   lint:
     name: Ansible lint
     runs-on: ubuntu-latest
@@ -155,7 +156,7 @@ jobs:
           path: .cache/collection-tarballs
 
       - name: Install collection build
-        run: ansible-galaxy collection install .cache/collection-tarballs/*.tar.gz --force
+        run: ansible-galaxy collection install .cache/collection-tarballs/*.tar.gz 
 
       - name: Run Ansible lint
         run: ansible-lint --show-relpath
