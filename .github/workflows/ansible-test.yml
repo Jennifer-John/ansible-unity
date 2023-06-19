@@ -155,7 +155,7 @@ jobs:
           path: .cache/collection-tarballs
 
       - name: Install collection build
-        run: ansible-galaxy collection install .cache/collection-tarballs/*.tar.gz
+        run: ansible-galaxy collection install .cache/collection-tarballs/*.tar.gz --force
 
       - name: Run Ansible lint
         run: ansible-lint --show-relpath
